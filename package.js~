@@ -3,7 +3,7 @@ Package.describe({
 });
 
 Package.on_use(function (api, where) {
-    api.add_files('services.js', 'server');
+    api.add_files('services.js', 'client');
 });
 
 Package.on_test(function (api) {

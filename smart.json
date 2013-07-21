@@ -1,0 +1,9 @@
+{
+	"name": "greenlight services",
+	"description": "Greenlight services site template",
+	"homepage": "https://github.com/cfriel/greenlight-services",
+	"author": "cfriel",
+	"version": "0.1.0",
+	"git": "https://github.com/cfriel/greenlight-services.git",
+	"packages": {}
+}

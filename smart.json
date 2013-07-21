@@ -5,5 +5,7 @@
 	"author": "cfriel",
 	"version": "0.1.0",
 	"git": "https://github.com/cfriel/greenlight-services.git",
-	"packages": {}
+	"packages": {
+		    "router" : {}
+	}
 }

@@ -14,9 +14,8 @@ Meteor.Router.add('/data', function(database){
 	MongoClient.connect('mongodb://127.0.0.1:27017/', function(err, db) {
 	    if(err) throw err;
 	    
-
 	    db.executeDbCommand({'listDatabases':1}, function(err, doc) { 
-		done(err,doc);
+		done(err,doc.documents[0].databases);
 	    });
 	    
 	})
@@ -99,13 +98,28 @@ Meteor.Router.add('/data/:database/:collection/:id', function(database,coll,id){
     var res = Meteor.sync(function(done){
 	MongoClient.connect('mongodb://127.0.0.1:27017/'+database, function(err, db) {
 	    if(err) throw err;
+
+	    console.log(id);
 	    
-	    db.collection(coll)
-		.find({'_id':new BSON.ObjectID(id)})
-		.limit(1)
-		.toArray(function(err, docs) {
-		    done(err, docs[0]);
-		});
+	    var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+	    
+	    if(checkForHexRegExp.test(id))
+	    {
+		db.collection(coll)
+		    .findOne({'_id':new BSON.ObjectID(id)}, 
+			     function(err, docs)
+			     {
+				 done(err, docs);
+			     });
+	    }
+	    else
+	    {
+		db.collection(coll)
+		    .findOne({'_id':id}, 
+			     function(err, docs) {
+				 done(err, docs);
+			     });
+	    }
 	});
     });
 

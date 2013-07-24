@@ -8,9 +8,9 @@ var Server = mongo.Server,
 
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 
-Meteor.Router.add('/schema/:database/:collection', function(database, collection){
-
-    if (typeof limit === "undefined") { var limit = 10000; }
+var getSchema = function(database, collection)
+{
+        if (typeof limit === "undefined") { var limit = 10000; }
     console.log("Using limit of " + limit);
     
     if (typeof maxDepth === "undefined") { var maxDepth = 99; }
@@ -183,8 +183,14 @@ Meteor.Router.add('/schema/:database/:collection', function(database, collection
 	    fields[key].ratio = fields[key].totalOccurrences / numDocuments;
 	}
 	
-	return JSON.stringify(res.result);
+	return res.result;
     }
+    
+}
+
+Meteor.Router.add('/schema/:database/:collection', function(database, collection){
+    
+    return JSON.stringify(getSchema(database, collection));
     
 });
 
@@ -314,3 +320,68 @@ Meteor.Router.add('/data/:database/:collection/:id', function(database,coll,id){
 	return JSON.stringify(res.result);
     }
 });
+
+Meteor.methods(
+    {
+
+	schema : function(database, collection)
+	{
+	    var s = getSchema(database, collection);
+	    console.log(s);
+	    return s;
+	},
+
+	load : function(database, collection, query, start, count)
+	{
+	    var mongo = Npm.require('mongodb');
+	    var Fiber = Npm.require('fibers');
+	    
+	    var MongoClient = mongo.MongoClient;    
+	    
+	    Fiber(function(params){
+
+		var database = params[0];
+		var collection = params[1];
+		var query = params[2];
+		var start = params[3];
+		var count = params[4];
+		
+		var res = Meteor.sync(function(done){
+		    MongoClient.connect('mongodb://127.0.0.1:27017/'+database, function(err, db) {
+			if(err) throw err;
+			
+			db.collection(collection)
+			    .find(query)
+			    .limit(count)
+			    .toArray(function(err, docs) {
+				done(err, docs);
+			    });
+		    });
+		});
+		
+		if(res.error)
+		{
+		    throw new Meteor.Error(401, res.error.message);
+		}
+		else
+		{
+		    //console.log("Inserting " + res.result.length + " records");
+
+		    //Data.remove();
+
+		    for(var i = 0; i < res.result.length; i++)
+		    {
+			res.result[i]._id = "" + res.result[i]._id;
+			res.result[i]._collection = collection;
+
+			if(!Data.findOne({_id : res.result[i]._id}))
+			{
+			    Data.insert(res.result[i]);
+			}
+		    }
+		}
+	    }).run([database, collection, query, start, count]);
+	
+	    return;
+	}
+    });

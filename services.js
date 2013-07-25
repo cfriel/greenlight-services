@@ -10,11 +10,9 @@ var server = new Server('localhost', 27017, {auto_reconnect: true});
 
 var getSchema = function(database, collection)
 {
-        if (typeof limit === "undefined") { var limit = 10000; }
-    console.log("Using limit of " + limit);
+    if (typeof limit === "undefined") { var limit = 10000; }
     
     if (typeof maxDepth === "undefined") { var maxDepth = 99; }
-    console.log("Using maxDepth of " + maxDepth);
     
     varietyCanHaveChildren = function (v) {
 	var isArray = v && 
@@ -32,8 +30,6 @@ var getSchema = function(database, collection)
 	if (typeof thing === "undefined") { throw "varietyTypeOf() requires an argument"; }
 	
 	if (typeof thing !== "object") {  
-	    // the messiness below capitalizes the first letter, so the output matches
-	    // the other return values below. -JC
 	    return (typeof thing)[0].toUpperCase() + (typeof thing).slice(1);
 	}
 	else {
@@ -109,7 +105,6 @@ var getSchema = function(database, collection)
 	}
     }
     
-    // store results here (no map reduce limit!)
     var varietyResults = {};
     var numDocuments = 0;
 
@@ -243,7 +238,7 @@ Meteor.Router.add('/data/:database', function(database){
     }
     else
     {
-	console.log(res.result);
+	//console.log(res.result);
 	return JSON.stringify(res.result);
     }
 
@@ -273,7 +268,7 @@ Meteor.Router.add('/data/:database/:collection', function(database,coll){
     }
     else
     {
-	console.log(res.result);
+	//console.log(res.result);
 	return JSON.stringify(res.result);
     }
 });
@@ -286,7 +281,7 @@ Meteor.Router.add('/data/:database/:collection/:id', function(database,coll,id){
 	MongoClient.connect('mongodb://127.0.0.1:27017/'+database, function(err, db) {
 	    if(err) throw err;
 
-	    console.log(id);
+	    //console.log(id);
 	    
 	    var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
 	    
@@ -316,72 +311,178 @@ Meteor.Router.add('/data/:database/:collection/:id', function(database,coll,id){
     }
     else
     {
-	console.log(res.result);
+	//console.log(res.result);
 	return JSON.stringify(res.result);
     }
 });
 
-Meteor.methods(
+Meteor.methods({
+
+    schema : function(database, collection)
     {
+	var s = getSchema(database, collection);
 
-	schema : function(database, collection)
-	{
-	    var s = getSchema(database, collection);
-	    console.log(s);
-	    return s;
-	},
+	return s;
+    },
 
-	load : function(database, collection, query, start, count)
-	{
-	    var mongo = Npm.require('mongodb');
-	    var Fiber = Npm.require('fibers');
+    databases : function()
+    {
+	var mongo = Npm.require('mongodb');
+	var Fiber = Npm.require('fibers');
+	
+	var Server = mongo.Server,
+	Db = mongo.Db,
+	BSON = mongo.BSONPure;
+	
+	var server = new Server('localhost', 27017, {auto_reconnect: true});
+	
+	var MongoClient = mongo.MongoClient;    
+
+	MongoClient.connect('mongodb://127.0.0.1:27017/', function(err, db) {
 	    
-	    var MongoClient = mongo.MongoClient;    
+	    if(err) throw err;
 	    
-	    Fiber(function(params){
-
-		var database = params[0];
-		var collection = params[1];
-		var query = params[2];
-		var start = params[3];
-		var count = params[4];
+	    db.executeDbCommand({'listDatabases':1}, function(err, doc) { 
 		
-		var res = Meteor.sync(function(done){
-		    MongoClient.connect('mongodb://127.0.0.1:27017/'+database, function(err, db) {
-			if(err) throw err;
+		var databases = doc.documents[0].databases;
+		
+		for(var i = 0; i < databases.length; i++){
+		    
+		    var databaseParam = databases[i];
+
+		    Fiber(function(database){
 			
-			db.collection(collection)
-			    .find(query)
-			    .limit(count)
-			    .toArray(function(err, docs) {
-				done(err, docs);
+			var collections = Meteor.sync(function(done){
+			    
+			    MongoClient.connect('mongodb://127.0.0.1:27017/'+database.name, function(err, child) {
+				
+				if(err) throw err;
+				
+				child.collectionNames(function(err, collections){			    
+				    done(err,collections);
+				});
 			    });
-		    });
-		});
-		
-		if(res.error)
-		{
-		    throw new Meteor.Error(401, res.error.message);
-		}
-		else
-		{
-		    //console.log("Inserting " + res.result.length + " records");
-
-		    //Data.remove();
-
-		    for(var i = 0; i < res.result.length; i++)
-		    {
-			res.result[i]._id = "" + res.result[i]._id;
-			res.result[i]._collection = collection;
-
-			if(!Data.findOne({_id : res.result[i]._id}))
+			});
+			
+			database.collections = collections.result;
+			
+			for(var j = 0; j < database.collections.length; j++)
 			{
-			    Data.insert(res.result[i]);
+			    var name = database.collections[j].name;
+			    var splits = name.split('.');
+
+			    var databaseName = splits[0];
+			    var collectionName = splits[1];
+
+			    database.collections[j].database = databaseName;
+			    database.collections[j].name = collectionName;
 			}
+			
+			if(!Databases.findOne({ name : database.name }))
+			{
+			    Databases.insert(database);
+			}
+
+		    }).run(databaseParam);
+		}
+	    });
+	});
+    },
+
+    load : function(database, collection, query, start, count)
+    {
+	var mongo = Npm.require('mongodb');
+	var Fiber = Npm.require('fibers');
+	
+	var MongoClient = mongo.MongoClient;    
+	
+	Fiber(function(params){
+
+	    var database = params[0];
+	    var collection = params[1];
+	    var query = params[2];
+	    var start = params[3];
+	    var count = params[4];
+	    
+	    var res = Meteor.sync(function(done){
+		MongoClient.connect('mongodb://127.0.0.1:27017/'+database, function(err, db) {
+		    if(err) throw err;
+		    
+		    db.collection(collection)
+			.find(query)
+			.limit(count)
+			.toArray(function(err, docs) {
+			    done(err, docs);
+			});
+		});
+	    });
+	    
+	    if(res.error)
+	    {
+		throw new Meteor.Error(401, res.error.message);
+	    }
+	    else
+	    {
+		for(var i = 0; i < res.result.length; i++)
+		{
+		    res.result[i]._id = "" + res.result[i]._id;
+		    res.result[i]._collection = collection;
+
+		    if(!Data.findOne({_id : res.result[i]._id}))
+		    {
+			Data.insert(res.result[i]);
 		    }
 		}
-	    }).run([database, collection, query, start, count]);
+	    }
+	}).run([database, collection, query, start, count]);
 	
-	    return;
-	}
-    });
+	return;
+    },
+
+    item : function(database, collection, id)
+    {
+	var mongo = Npm.require('mongodb');
+	var Fiber = Npm.require('fibers');
+	
+	var MongoClient = mongo.MongoClient;    
+	
+	Fiber(function(params){
+
+	    var database = params[0];
+	    var collection = params[1];
+	    var id = params[2];
+	    
+	    var res = Meteor.sync(function(done){
+		MongoClient.connect('mongodb://127.0.0.1:27017/'+database, function(err, db) {
+		    if(err) throw err;
+		    
+		    db.collection(collection)
+			.find({_id : id})
+			.toArray(function(err, docs) {
+			    done(err, docs);
+			});
+		});
+	    });
+	    
+	    if(res.error)
+	    {
+		throw new Meteor.Error(401, res.error.message);
+	    }
+	    else
+	    {
+		for(var i = 0; i < res.result.length; i++)
+		{
+		    res.result[i]._id = "" + res.result[i]._id;
+		    res.result[i]._collection = collection;
+
+		    if(!Data.findOne({_id : res.result[i]._id}))
+		    {
+			Data.insert(res.result[i]);
+		    }
+		}
+	    }
+	}).run([database, collection, id]);
+	
+	return;
+    }
+});

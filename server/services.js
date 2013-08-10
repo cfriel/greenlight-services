@@ -14,13 +14,13 @@ services.prototype.metadata = function()
 }();
 
 
-Greenlight.Services = services.prototype;
+Greenlight.Packages.Services = services.prototype;
 
 Meteor.startup(function(){
     
     console.log("loading services package");
     
-    Greenlight.register_template(name, version, Greenlight.Services);
+    Greenlight.register_template(name, version, Greenlight.Packages.Services);
     
 });
 

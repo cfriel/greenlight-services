@@ -7,7 +7,7 @@ Npm.depends({mongodb: "1.3.4"});
 Package.on_use(function (api, where) {
     api.use('npm', 'server');
     api.use('router', ['client', 'server']);
-    api.add_files('services.js', 'server');
+    api.add_files('server/services.js', 'server');
 });
 
 Package.on_test(function (api) {

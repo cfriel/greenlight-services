@@ -163,14 +163,8 @@ Meteor.Router.add('/data/:database/:collection/:id', function(database,coll,id){
     }
 });
 
+// deprecated
 Meteor.methods({
-
-    schema : function(database, collection)
-    {
-	var s = getSchema(database, collection);
-
-	return s;
-    },
 
     databases : function(server)
     {

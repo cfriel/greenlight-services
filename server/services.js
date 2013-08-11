@@ -20,7 +20,7 @@ Meteor.startup(function(){
     
     console.log("loading services package");
     
-    Greenlight.register_template(name, version, Greenlight.Packages.Services);
+    Greenlight.register_package(name, version, Greenlight.Packages.Services);
     
 });
 

@@ -5,8 +5,13 @@ Package.describe({
 Npm.depends({mongodb: "1.3.4"});
 
 Package.on_use(function (api, where) {
+
     api.use('npm', 'server');
     api.use('router', ['client', 'server']);
+    api.use('deps', ['client', 'server']);
+    api.use('session', ['client', 'server']);
+    api.use('greenlight', ['client','server']);
+
     api.add_files('server/services.js', 'server');
 });
 

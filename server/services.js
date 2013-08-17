@@ -18,7 +18,7 @@ Greenlight.Packages.Services = services.prototype;
 
 Meteor.startup(function(){
     
-    console.log("loading services package");
+    Greenlight.log("loading services package");
     
     Greenlight.register_package(name, version, Greenlight.Packages.Services);
     
@@ -117,7 +117,6 @@ Meteor.Router.add('/data/:database/:collection', function(database,coll){
     }
     else
     {
-	//console.log(res.result);
 	return JSON.stringify(res.result);
     }
 });

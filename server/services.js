@@ -35,13 +35,13 @@ var BSON = mongo.BSONPure;
 
 var serverUrl = 'mongodb://127.0.0.1:27017/';
 
-Meteor.Router.add('/schema/:database/:collection', function(database, collection){
+Meteor.Router.add('/mongo/schema/:database/:collection', function(database, collection){
     
     return JSON.stringify(Greenlight.Helpers.analyze_schema(serverUrl, database, collection));
     
 });
 
-Meteor.Router.add('/data', function(database){
+Meteor.Router.add('/mongo/data', function(database){
 
     var res = Meteor.sync(function(done){
 	MongoClient.connect(serverUrl, function(err, db) {
@@ -67,7 +67,7 @@ Meteor.Router.add('/data', function(database){
 });
 
 
-Meteor.Router.add('/data/:database', function(database){
+Meteor.Router.add('/mongo/data/:database', function(database){
 
     var res = Meteor.sync(function(done){
 	MongoClient.connect(serverUrl+database, function(err, db) {
@@ -92,7 +92,7 @@ Meteor.Router.add('/data/:database', function(database){
 
 });
 
-Meteor.Router.add('/data/:database/:collection', function(database,coll){
+Meteor.Router.add('/mongo/data/:database/:collection', function(database,coll){
 
     var res = Meteor.sync(function(done){
 	MongoClient.connect(serverUrl + database, function(err, db) {
@@ -121,7 +121,7 @@ Meteor.Router.add('/data/:database/:collection', function(database,coll){
     }
 });
     
-Meteor.Router.add('/data/:database/:collection/:id', function(database,coll,id){
+Meteor.Router.add('/mongo/data/:database/:collection/:id', function(database,coll,id){
 
     var res = Meteor.sync(function(done){
 	MongoClient.connect(serverUrl+database, function(err, db) {

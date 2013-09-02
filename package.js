@@ -2,7 +2,7 @@ Package.describe({
   summary: "Greenlight services site template"
 });
 
-Npm.depends({mongodb: "1.3.4"});
+Npm.depends({mongodb: "1.3.4", prozess: "0.6.1", elasticsearch: "0.3.11" });
 
 Package.on_use(function (api, where) {
 

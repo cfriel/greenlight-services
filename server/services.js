@@ -24,6 +24,24 @@ Meteor.startup(function(){
     
 });
 
+var Consumer = Npm.require('prozess').Consumer;
+
+var options = {host : 'localhost', topic : 'social', partition : 0, offset : 0};
+var consumer = new Consumer(options);
+
+/* consumer.connect(function(err){
+  if (err) {  throw err; }
+  console.log("connected!!");
+  setInterval(function(){
+    console.log("===================================================================");
+    console.log(new Date());
+    console.log("consuming: " + consumer.topic);
+    consumer.consume(function(err, messages){
+      console.log(err, messages);
+    });
+  }, 7000);
+});*/
+
 var mongo = Npm.require('mongodb');
 var ObjectID = Npm.require('mongodb').ObjectID;
 var Binary = Npm.require('mongodb').Binary;
@@ -34,6 +52,46 @@ var Db = mongo.Db;
 var BSON = mongo.BSONPure;
 
 var serverUrl = 'mongodb://127.0.0.1:27017/';
+
+Meteor.Router.add('/autocomplete/:search', function(search){
+
+    var elasticsearch = Npm.require('elasticsearch');
+
+    var config = {
+	_index : 'gist'
+    };
+    
+    var es = elasticsearch(config);
+    
+    var res = Meteor.sync(function(done){
+
+	es.search({
+	    query : {
+		query_string : {
+		    fields : [
+			'twitter.profile'
+		    ],
+		    query : search
+		}
+	    }
+	}, function (err, data) {
+	    done(err,data);
+	    console.log(data);
+	});
+    });
+			  
+    if(res.error)
+    {
+	throw new Meteor.Error(401, res.error.message);
+    }
+    else
+    {
+	return JSON.stringify(res.result);
+    }
+        
+});
+
+
 
 Meteor.Router.add('/mongo/schema/:database/:collection', function(database, collection){
     

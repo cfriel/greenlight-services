@@ -65,7 +65,7 @@ Meteor.Router.add('/autocomplete/:search', function(search){
     
     var res = Meteor.sync(function(done){
 
-	es.search({
+	/*es.search({
 	    query : {
 		query_string : {
 		    fields : [
@@ -78,6 +78,13 @@ Meteor.Router.add('/autocomplete/:search', function(search){
 	    done(err,data);
 	    console.log(data);
 	});
+	*/
+
+	var res = [];
+
+	res[0] = {value: "foo", url: "/bar"};
+
+	done(null, res);
     });
 			  
     if(res.error)
@@ -86,6 +93,7 @@ Meteor.Router.add('/autocomplete/:search', function(search){
     }
     else
     {
+	console.log(res);
 	return JSON.stringify(res.result);
     }
         
